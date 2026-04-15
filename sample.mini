@@ -1,0 +1,45 @@
+int add(int a, int b) {
+    int result = a + b;
+    return result;
+}
+
+int subtract(int a, int b) {
+    int result = a - b;
+    return result;
+}
+
+int multiply(int a, int b) {
+    int result = a * b;
+    return result;
+}
+
+int divide(int a, int b) {
+    int result = a / b;
+    return result;
+}
+
+int main() {
+    int x = 20;
+    int y = 5;
+    int sum;
+    int difference;
+    int product;
+    int quotient;
+
+    sum = add(x, y);
+    difference = subtract(x, y);
+    product = multiply(x, y);
+
+    if (y > 0) {
+        quotient = divide(x, y);
+        printf("Division result:", quotient);
+    } else {
+        printf("Division error:", y);
+    }
+
+    printf("Addition result:", sum);
+    printf("Subtraction result:", difference);
+    printf("Multiplication result:", product);
+
+    return 0;
+}
