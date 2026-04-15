@@ -5,12 +5,12 @@
 extern int yylex();
 extern int line_num;
 extern FILE *yyin;
+
 void yyerror(const char *s);
 
 int indent = 0;
-void print_node(const char* s) {
+void print_indent() {
     for(int i = 0; i < indent; i++) printf("  | ");
-    printf("%s\n", s);
 }
 %}
 
@@ -22,13 +22,14 @@ void print_node(const char* s) {
 %token <ival> NUMBER
 %token <sval> IDENTIFIER STRING
 %token INT RETURN IF ELSE PRINTF REL_OP ASSIGN_OP ARITH_OP
+%left REL_OP
 %left ARITH_OP
 
 %%
 program:
-    { print_node("PROGRAM_START"); indent++; }
+    { printf("PROGRAM_START\n"); indent++; }
     ext_defs
-    { indent--; print_node("PROGRAM_END"); }
+    { indent--; printf("PROGRAM_END\n"); }
     ;
 
 ext_defs:
@@ -38,7 +39,7 @@ ext_defs:
 
 func_def:
     INT IDENTIFIER '(' params ')' '{' 
-    { printf("  |-- FUNCTION: %s\n", $2); indent++; }
+    { print_indent(); printf("FUNCTION: %s\n", $2); indent++; }
     statements 
     '}'
     { indent--; }
@@ -60,18 +61,20 @@ statements:
     ;
 
 stmt:
-    INT IDENTIFIER ';' { printf("  |-- DECLARATION: %s\n", $2); }
-    | IDENTIFIER ASSIGN_OP expr ';' { printf("  |-- ASSIGNMENT to %s\n", $1); }
-    | RETURN expr ';' { print_node("RETURN_STMT"); }
-    | IF '(' expr ')' '{' statements '}' ELSE '{' statements '}' { print_node("IF_ELSE_BLOCK"); }
-    | PRINTF '(' STRING ',' expr ')' ';' { print_node("PRINTF_CALL"); }
+    INT IDENTIFIER ';'              { print_indent(); printf("DECLARATION: %s\n", $2); }
+    | INT IDENTIFIER ASSIGN_OP expr ';' { print_indent(); printf("DECLARATION & ASSIGNMENT: %s\n", $2); }
+    | IDENTIFIER ASSIGN_OP expr ';' { print_indent(); printf("ASSIGNMENT: %s\n", $1); }
+    | RETURN expr ';'               { print_indent(); printf("RETURN_STMT\n"); }
+    | IF '(' expr ')' '{' statements '}' ELSE '{' statements '}' { print_indent(); printf("IF_ELSE_BLOCK\n"); }
+    | PRINTF '(' STRING ',' expr ')' ';' { print_indent(); printf("PRINTF_CALL\n"); }
     ;
 
 expr:
-    NUMBER { printf("  |   |-- CONST: %d\n", $1); }
-    | IDENTIFIER { printf("  |   |-- VAR: %s\n", $1); }
-    | IDENTIFIER '(' args ')' { printf("  |   |-- FUNC_CALL: %s\n", $1); }
-    | expr ARITH_OP expr { print_node("ARITH_OP"); }
+    NUMBER               { print_indent(); printf("  |-- CONST: %d\n", $1); }
+    | IDENTIFIER         { print_indent(); printf("  |-- VAR: %s\n", $1); }
+    | IDENTIFIER '(' args ')' { print_indent(); printf("  |-- FUNC_CALL: %s\n", $1); }
+    | expr ARITH_OP expr { print_indent(); printf("  |-- ARITH_OP\n"); }
+    | expr REL_OP expr   { print_indent(); printf("  |-- REL_OP\n"); }
     ;
 
 args:
@@ -93,10 +96,7 @@ void yyerror(const char *s) {
 int main(int argc, char **argv) {
     if(argc > 1) {
         yyin = fopen(argv[1], "r");
-        if(!yyin) {
-            perror("File opening failed");
-            return 1;
-        }
+        if(!yyin) { perror("File opening failed"); return 1; }
     }
     yyparse();
     return 0;
