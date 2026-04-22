@@ -9,6 +9,7 @@ void yyerror(const char *s);
 
 int line_num = 1;
 int indent = 0;
+int is_parsing = 0; // Controls if the scanner should print tokens
 
 void print_indent() {
     for(int i = 0; i < indent; i++) printf("  | ");
@@ -28,8 +29,7 @@ void print_indent() {
 
 %%
 program:
-    { printf("\n--- STAGE 2: PARSE TREE GENERATION ---\n");
-      printf("PROGRAM_START\n"); indent++; }
+    { printf("PROGRAM_START\n"); indent++; }
     ext_defs
     { indent--; printf("PROGRAM_END\n"); }
     ;
@@ -46,7 +46,7 @@ func_def:
 
 params: | param_list ;
 param_list: INT IDENTIFIER | param_list ',' INT IDENTIFIER ;
-statements: | statements stmt ;
+statements: | statements stmt | statements error ';' { yyerrok; } ;
 
 stmt:
     INT IDENTIFIER ';' { print_indent(); printf("DECLARATION: %s\n", $2); }
@@ -71,7 +71,7 @@ arg_list: expr | arg_list ',' expr ;
 %%
 
 void yyerror(const char *s) {
-    fprintf(stderr, "PARSER ERROR: %s at line %d\n", s, line_num);
+    fprintf(stderr, "\033[1;31mPARSER ERROR:\033[0m %s at line %d\n", s, line_num);
 }
 
 int main(int argc, char **argv) {
@@ -84,17 +84,18 @@ int main(int argc, char **argv) {
     printf("\n--- STAGE 1: LEXER TOKEN STREAM ---\n");
     printf("%-20s | %-15s | %-5s\n", "TOKEN TYPE", "LEXEME", "LINE");
     printf("----------------------------------------------------\n");
+    
+    is_parsing = 0; 
+    while (yylex() != 0); // Scans the whole file once
 
-    int token;
-    while ((token = yylex()) != 0) {
-        // Tokens are printed by scanner.l
-    }
-
-    // RESET FOR PARSER
+    // --- RESET FOR STAGE 2 ---
     rewind(yyin);
     line_num = 1;
+    is_parsing = 1; // Stop token printing so they don't mix with the tree
 
-    // --- STAGE 2: SYNTAX ANALYSIS ---
+    printf("\n--- STAGE 2: PARSE TREE GENERATION ---\n");
+    printf("----------------------------------------------------\n");
+    
     yyparse(); 
     return 0;
 }
